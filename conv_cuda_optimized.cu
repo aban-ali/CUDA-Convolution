@@ -5,7 +5,7 @@
 #define KERNEL_SIZE 3
 
 float *img;
-float kernel[KERNEL_SIZE * KERNEL_SIZE] = {1, 0, -1, 1, 0, -1, 1, 0, -1};
+__constant__ float kern[KERNEL_SIZE * KERNEL_SIZE];
 float *output;
 
 void init_img(){
@@ -14,22 +14,22 @@ void init_img(){
 }
 
 __global__
-void calcConvolution(float* image, float* kern, float* out){
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    float val = 0;
-    if(row<IMG_SIZE-KERNEL_SIZE+1 && col<IMG_SIZE-KERNEL_SIZE+1){
-        for(int i=0; i<KERNEL_SIZE; i++){
-            for(int j=0; j<KERNEL_SIZE; j++){
-                val += image[ (row+i) * IMG_SIZE + (col+j)] * kern[ i * KERNEL_SIZE + j ];
-            }
-        }
-        out[row * (IMG_SIZE - KERNEL_SIZE + 1) + col] = val;
-    }
+void calcTiledConvolution(float* image, float* out){
+    // int row = blockIdx.y * blockDim.y + threadIdx.y;
+    // int col = blockIdx.x * blockDim.x + threadIdx.x;
+    // float val = 0;
+    // if(row<IMG_SIZE-KERNEL_SIZE+1 && col<IMG_SIZE-KERNEL_SIZE+1){
+    //     for(int i=0; i<KERNEL_SIZE; i++){
+    //         for(int j=0; j<KERNEL_SIZE; j++){
+    //             val += image[ (row+i) * IMG_SIZE + (col+j)] * kern[ i * KERNEL_SIZE + j ];
+    //         }
+    //     }
+    //     out[row * (IMG_SIZE - KERNEL_SIZE + 1) + col] = val;
+    // }
 }
 
-void convolution(float* A_h, float* O_h){
-    float *A_d, *ker_d, *O_d;
+void convolution(float* A_h, float* kern_h, float* O_h){
+    float *A_d, *O_d;
     int size_img = IMG_SIZE * IMG_SIZE * sizeof(float);
     int size_ker = KERNEL_SIZE * KERNEL_SIZE * sizeof(float);
     int size_out = (IMG_SIZE - KERNEL_SIZE + 1) * (IMG_SIZE - KERNEL_SIZE + 1) * sizeof(float);
@@ -39,12 +39,12 @@ void convolution(float* A_h, float* O_h){
     cudaMalloc((void**)&O_d, size_out);
 
     cudaMemcpy(A_d, A_h, size_img, cudaMemcpyHostToDevice);
-    cudaMemcpy(ker_d, kernel, size_ker, cudaMemcpyHostToDevice);
+    cudaMemcpyToSymbol(kern, kern_h, size_ker);   // copies the data to GPUs constant memory.
 
     dim3 threads(8, 8);
     dim3 blocks(IMG_SIZE/8, IMG_SIZE/8);   
-    calcConvolution<<<blocks, threads>>>(A_d, ker_d, O_d);
-    
+    calcTiledConvolution<<<blocks, threads>>>(A_d, ker_d, O_d);
+
     cudaError_t err = cudaGetLastError();
     if(err != cudaSuccess){
         printf("CUDA Launch Error : \t%s", cudaGetErrorString(err));
@@ -67,6 +67,7 @@ int main(){
                             (IMG_SIZE - KERNEL_SIZE + 1) * sizeof(float));
     
     init_img();
+    filter_init();
     convolution(img, output);
 
     free(img);
