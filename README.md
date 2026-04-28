@@ -53,12 +53,11 @@ why optimized is faster
 ## 6. Setup & Usage
 Provide a one-liner to build and run:
 
-nvcc main.cu -o benchmark
-./benchmark
+`nvcc conv_cuda_half_optim.cu -o benchmark && ./benchmark`
 
 List hardware used (e.g., RTX 3080, Intel i7-12700K) so the numbers have context.
 
-## 7. Future Work (optional but strong)
+## 7. Future Work
 - multi-channel convolution
 - larger kernels
 - tensor cores
