@@ -17,14 +17,23 @@ __global__
 void calcConvolution(float* image, float* kern, float* out){
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
-    float val = 0;
-    if(row<IMG_SIZE-KERNEL_SIZE+1 && col<IMG_SIZE-KERNEL_SIZE+1){
+
+    if(row<IMG_SIZE && col<IMG_SIZE){
+        
+        float val = 0;
+
         for(int i=0; i<KERNEL_SIZE; i++){
             for(int j=0; j<KERNEL_SIZE; j++){
-                val += image[ (row+i) * IMG_SIZE + (col+j)] * kern[ i * KERNEL_SIZE + j ];
+
+                int krow = row + i - KERNEL_SIZE/2;
+                int kcol = col + j - KERNEL_SIZE/2;
+
+                if(krow>=0 && krow<IMG_SIZE && kcol>=0 && kcol<IMG_SIZE)
+                    val += image[ krow * IMG_SIZE + kcol ] * kern[ i * KERNEL_SIZE + j ];
             }
         }
-        out[row * (IMG_SIZE - KERNEL_SIZE + 1) + col] = val;
+
+        out[row * IMG_SIZE + col] = val;
     }
 }
 
@@ -32,7 +41,7 @@ void convolution(float* A_h, float* O_h){
     float *A_d, *ker_d, *O_d;
     int size_img = IMG_SIZE * IMG_SIZE * sizeof(float);
     int size_ker = KERNEL_SIZE * KERNEL_SIZE * sizeof(float);
-    int size_out = (IMG_SIZE - KERNEL_SIZE + 1) * (IMG_SIZE - KERNEL_SIZE + 1) * sizeof(float);
+    int size_out = IMG_SIZE * IMG_SIZE * sizeof(float);
     
     cudaMalloc((void**)&A_d, size_img);
     cudaMalloc((void**)&ker_d, size_ker);
@@ -42,7 +51,7 @@ void convolution(float* A_h, float* O_h){
     cudaMemcpy(ker_d, kernel, size_ker, cudaMemcpyHostToDevice);
 
     dim3 threads(8, 8);
-    dim3 blocks(IMG_SIZE/8, IMG_SIZE/8);   
+    dim3 blocks( (IMG_SIZE + threads.x - 1)/threads.x, (IMG_SIZE + threads.y - 1)/threads.y);   
     calcConvolution<<<blocks, threads>>>(A_d, ker_d, O_d);
     
     cudaError_t err = cudaGetLastError();
@@ -63,8 +72,7 @@ void convolution(float* A_h, float* O_h){
 
 int main(){
     img = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
-    output = (float*)malloc( (IMG_SIZE - KERNEL_SIZE + 1) * 
-                            (IMG_SIZE - KERNEL_SIZE + 1) * sizeof(float));
+    output = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
     
     init_img();
     convolution(img, output);

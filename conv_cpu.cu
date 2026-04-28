@@ -25,9 +25,8 @@ void convolution(){
 
                     int row = i + ki - KERNEL_SIZE/2;
                     int col = j + kj - KERNEL_SIZE/2;
-
-                    tsum += row<0 || col<0 || row>=IMG_SIZE || col>=IMG_SIZE ? 0 : img[ row * IMG_SIZE + col ] * 
-                                                                                    kernel[ ki * KERNEL_SIZE + kj];
+                    if(row<0 || col<0 || row>=IMG_SIZE || col>=IMG_SIZE )
+                        tsum += img[ row * IMG_SIZE + col ] * kernel[ ki * KERNEL_SIZE + kj];
                 }
             }
             output[ i * IMG_SIZE + j] = tsum;
