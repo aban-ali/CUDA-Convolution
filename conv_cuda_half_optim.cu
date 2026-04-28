@@ -3,7 +3,7 @@
 
 #define IMG_SIZE 512
 #define KERNEL_SIZE 3
-#define TILE_DIM 8
+#define TILE_DIM 16
 
 float *img;
 __constant__ float kern[KERNEL_SIZE * KERNEL_SIZE];
@@ -22,7 +22,7 @@ void kernel_init(float *kernel){
 }
 
 __global__
-void calcTiledConvolution1(float* image, float* out){
+void calcTiledConvolution(float* image, float* out){
     int row = blockIdx.y * (TILE_DIM - KERNEL_SIZE + 1) + threadIdx.y - KERNEL_SIZE/2;
     int col = blockIdx.x * (TILE_DIM - KERNEL_SIZE + 1) + threadIdx.x - KERNEL_SIZE/2;
     __shared__ float Nds[TILE_DIM][TILE_DIM];
@@ -68,7 +68,7 @@ void convolution(float* A_h, float* kern_h, float* O_h){
     dim3 threads(TILE_DIM, TILE_DIM);
     dim3 blocks( ( IMG_SIZE + (TILE_DIM - KERNEL_SIZE + 1) - 1)/( TILE_DIM - KERNEL_SIZE + 1 ), 
                 ( IMG_SIZE + (TILE_DIM - KERNEL_SIZE + 1) - 1)/( TILE_DIM - KERNEL_SIZE + 1 ));   
-    calcTiledConvolution1<<<blocks, threads>>>(A_d, O_d);
+    calcTiledConvolution<<<blocks, threads>>>(A_d, O_d);
 
     cudaError_t err = cudaGetLastError();
     if(err != cudaSuccess){
@@ -94,15 +94,6 @@ int main(){
     init_img();
     kernel_init(kernel);
     convolution(img, kernel, output);
-
-    for(int i=0; i<5; i++){
-        for(int j=0; j<5; j++){
-            printf("%f\t", img[i*IMG_SIZE+j]);
-        }
-        printf("\n");
-    }
-    
-    printf("\n%f\t%f\n%f\t%f\n", output[0], output[1], output[512], output[513]);
 
     free(img);
     free(output);
