@@ -1,2 +1,4 @@
 *.out
 *.o
+
+cuda_time/*

@@ -1,12 +1,8 @@
 # Performance Comparison: CPU vs. CUDA vs. 3 Optimized CUDA versions
 
----
-
 ## 1. Overview
 
 * Benchmarking Convolution operation in CPU and CUDA to demonstrate the speedup of GPU acceleration and memory optimization (shared memory/tiling).
-
---- 
 
 ## 2. The Approach
 Brief description of five Convolution implementations:
@@ -17,14 +13,12 @@ Brief description of five Convolution implementations:
 * **Half Optimized CUDA**: Improvement on Base Tile CUDA implementation. Each thread loads an input tile element. Thus, lot of threads does not involve in output calculation.
 * **Optimized CUDA**: Most optimized version. Improvement on Half Optimized CUDA version. Each thread calculates an output element.
 
----
-
 ## 3. Optimization Techniques
 
-Shared memory tiling
-Memory coalescing
-Constant memory usage
-Loop unrolling
+- Shared memory tiling
+- Memory coalescing
+- Constant memory usage
+- Loop unrolling
 
 ---
 
@@ -65,7 +59,7 @@ nvcc main.cu -o benchmark
 List hardware used (e.g., RTX 3080, Intel i7-12700K) so the numbers have context.
 
 ## 7. Future Work (optional but strong)
-multi-channel convolution
-larger kernels
-tensor cores
-fusion
+- multi-channel convolution
+- larger kernels
+- tensor cores
+- fusion
