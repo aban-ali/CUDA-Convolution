@@ -54,10 +54,14 @@ void calcTiledConvolution(float* image, float* out){
 }
 
 void convolution(float* A_h, float* kern_h, float* O_h){
-    float *A_d, *O_d;
-    int size_img = IMG_SIZE * IMG_SIZE * sizeof(float);
-    int size_ker = KERNEL_SIZE * KERNEL_SIZE * sizeof(float);
-    int size_out = IMG_SIZE * IMG_SIZE * sizeof(float);
+    float        *A_d, *O_d;
+    int          size_img = IMG_SIZE * IMG_SIZE * sizeof(float);
+    int          size_ker = KERNEL_SIZE * KERNEL_SIZE * sizeof(float);
+    int          size_out = IMG_SIZE * IMG_SIZE * sizeof(float);
+    cudaEvent_t start, stop;
+
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
     
     cudaMalloc((void**)&A_d, size_img);
     cudaMalloc((void**)&O_d, size_out);
@@ -69,6 +73,20 @@ void convolution(float* A_h, float* kern_h, float* O_h){
     dim3 blocks( ( IMG_SIZE + (TILE_DIM - KERNEL_SIZE + 1) - 1)/( TILE_DIM - KERNEL_SIZE + 1 ), 
                 ( IMG_SIZE + (TILE_DIM - KERNEL_SIZE + 1) - 1)/( TILE_DIM - KERNEL_SIZE + 1 ));   
     calcTiledConvolution<<<blocks, threads>>>(A_d, O_d);
+    cudaDeviceSynchronize();
+    
+    float total = 0.0f;
+    for(int t=0; t<10; t++){
+        cudaEventRecord(start);   
+        calcTiledConvolution<<<blocks, threads>>>(A_d, O_d);
+        cudaEventRecord(stop);
+        cudaEventSynchronize(stop);
+
+        float ms = 0.0f;
+        cudaEventElapsedTime(&ms, start, stop);
+        total += ms;
+    }
+    printf("Average time of 10 runs: %f ms\n", total/10);
 
     cudaError_t err = cudaGetLastError();
     if(err != cudaSuccess){

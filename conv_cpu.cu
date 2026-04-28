@@ -1,5 +1,6 @@
-// #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define IMG_SIZE 512
 #define KERNEL_SIZE 3
@@ -25,7 +26,7 @@ void convolution(){
 
                     int row = i + ki - KERNEL_SIZE/2;
                     int col = j + kj - KERNEL_SIZE/2;
-                    if(row<0 || col<0 || row>=IMG_SIZE || col>=IMG_SIZE )
+                    if(row>=0 && col>=0 && row<IMG_SIZE && col<IMG_SIZE )
                         tsum += img[ row * IMG_SIZE + col ] * kernel[ ki * KERNEL_SIZE + kj];
                 }
             }
@@ -40,6 +41,17 @@ int main(){
 
     init_img();
     convolution();
+
+    double total = 0;
+    for(int t = 0; t < 10; t++){
+        clock_t start = clock();
+        convolution();
+        clock_t end = clock();
+
+        total += (double)(end - start);
+    }
+    double time_ms = (total / 10.0) * 1000.0 / CLOCKS_PER_SEC;
+    printf("Avg CPU time: %f ms\n", time_ms);
 
     free(img);
     free(output);
