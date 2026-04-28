@@ -15,27 +15,30 @@ void init_img(){
 }
 
 void convolution(){
-    int out_size = IMG_SIZE - KERNEL_SIZE + 1;
-    for(int i=0; i<out_size; i++){
-        for(int j=0; j<out_size; j++){
+    for(int i=0; i<IMG_SIZE; i++){
+        for(int j=0; j<IMG_SIZE; j++){
 
             float tsum=0;
 
             for(int ki=0; ki<KERNEL_SIZE; ki++){
                 for(int kj=0; kj<KERNEL_SIZE; kj++){
-                    tsum += img[ (i+ki) * IMG_SIZE + (j+kj) ] * 
-                            kernel[ ki * KERNEL_SIZE + kj];
+
+                    int row = i + ki - KERNEL_SIZE/2;
+                    int col = j + kj - KERNEL_SIZE/2;
+
+                    tsum += row<0 || col<0 || row>=IMG_SIZE || col>=IMG_SIZE ? 0 : img[ row * IMG_SIZE + col ] * 
+                                                                                    kernel[ ki * KERNEL_SIZE + kj];
                 }
             }
-            output[ i * out_size + j] = tsum;
+            output[ i * IMG_SIZE + j] = tsum;
         }
     }
 }
 
 int main(){
     img = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
-    output = (float*)malloc((IMG_SIZE - KERNEL_SIZE + 1) * 
-                            (IMG_SIZE - KERNEL_SIZE + 1) * sizeof(float));
+    output = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
+
     init_img();
     convolution();
 
