@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define IMG_SIZE 512
-#define FILTER_SIZE 3
+#define IMG_SIZE 2048
+#define FILTER_SIZE 7
 #define TILE_DIM 16
 
 float *img;

@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define IMG_SIZE 512
-#define FILTER_SIZE 3
+#define IMG_SIZE 2048
+#define FILTER_SIZE 7
 
 float *img;
 float *filter;

@@ -10,8 +10,8 @@ Brief description of five Convolution implementations:
 * **CPU Baseline**: Single-threaded C implementation serving as the overall baseline model.
 * **Simple CUDA**: Naive global memory implementation, it serves as the base CUDA implementation.
 * **Base Tile CUDA**: Naive tiled implementation. Depends on cache for halo elements. Implemented using contant and shared memory.
-* **Half Optimized CUDA**: Improvement on Base Tile CUDA implementation. Each thread loads an input tile element. Thus, lot of threads does not involve in output calculation.
-* **Optimized CUDA**: Most optimized version. Improvement on Half Optimized CUDA version. Each thread calculates an output element.
+* **Optimized CUDA 1**: Improvement on Base Tile CUDA implementation. Each thread loads an input tile element. Thus, lot of threads does not involve in output calculation.
+* **Optimized CUDA 2**: Most optimized version. Alternate implementation of Optimized CUDA 1 version. Each thread calculates an output element.
 
 ## 3. Optimization Techniques
 
