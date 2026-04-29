@@ -2,29 +2,29 @@
 #include <stdio.h>
 
 #define IMG_SIZE 512
-#define KERNEL_SIZE 3
+#define FILTER_SIZE 3
 #define TILE_DIM 16
 
 float *img;
-__constant__ float kern[KERNEL_SIZE * KERNEL_SIZE];
+__constant__ float conv_filter[FILTER_SIZE * FILTER_SIZE];
 float *output;
 
 void init_img(){
     for(int i=0; i<IMG_SIZE*IMG_SIZE; i++)
         img[i] = rand() % 256;
 }
-void init_kernel(float *kernel){
-    for(int i=0; i<KERNEL_SIZE*KERNEL_SIZE; i++){
-        kernel[i] = rand() % KERNEL_SIZE;
-        if(((int)kernel[i]) & 1)
-            kernel[i] *= -1;
+void init_filter(float *filter){
+    for(int i=0; i<FILTER_SIZE*FILTER_SIZE; i++){
+        filter[i] = rand() % FILTER_SIZE;
+        if(((int)filter[i]) & 1)
+            filter[i] *= -1;
     }
 }
 
 __global__
 void calcTiledConvolution(float* image, float* out){
-    int row = blockIdx.y * (TILE_DIM - KERNEL_SIZE + 1) + threadIdx.y - KERNEL_SIZE/2;
-    int col = blockIdx.x * (TILE_DIM - KERNEL_SIZE + 1) + threadIdx.x - KERNEL_SIZE/2;
+    int row = blockIdx.y * (TILE_DIM - FILTER_SIZE + 1) + threadIdx.y - FILTER_SIZE/2;
+    int col = blockIdx.x * (TILE_DIM - FILTER_SIZE + 1) + threadIdx.x - FILTER_SIZE/2;
     __shared__ float Nds[TILE_DIM][TILE_DIM];
 
     if(row>=0 && row<IMG_SIZE && col>=0 && col<IMG_SIZE)
@@ -35,20 +35,20 @@ void calcTiledConvolution(float* image, float* out){
     __syncthreads();
     
     if(row>=0 && row<IMG_SIZE && col>=0 && col<IMG_SIZE){
-        int tile_row = threadIdx.y - KERNEL_SIZE/2;
-        int tile_col = threadIdx.x - KERNEL_SIZE/2;
+        int tile_row = threadIdx.y - FILTER_SIZE/2;
+        int tile_col = threadIdx.x - FILTER_SIZE/2;
 
-        if( tile_row>=0 && tile_row<(TILE_DIM - KERNEL_SIZE + 1) && 
-            tile_col>=0 && tile_col<(TILE_DIM - KERNEL_SIZE + 1) ){
+        if( tile_row>=0 && tile_row<(TILE_DIM - FILTER_SIZE + 1) && 
+            tile_col>=0 && tile_col<(TILE_DIM - FILTER_SIZE + 1) ){
 
             float val = 0;
 
-            for(int i=0; i<KERNEL_SIZE; i++){
-                for(int j=0; j<KERNEL_SIZE; j++){
-                    val += Nds[tile_row + i][tile_col + j] * kern[ i * KERNEL_SIZE + j ];
+            for(int i=0; i<FILTER_SIZE; i++){
+                for(int j=0; j<FILTER_SIZE; j++){
+                    val += Nds[tile_row + i][tile_col + j] * conv_filter[ i * FILTER_SIZE + j ];
                 }
             }
-            out[(row + KERNEL_SIZE/2) * IMG_SIZE + (col + KERNEL_SIZE/2)] = val;
+            out[(row + FILTER_SIZE/2) * IMG_SIZE + (col + FILTER_SIZE/2)] = val;
         }
     }
 }
@@ -56,7 +56,7 @@ void calcTiledConvolution(float* image, float* out){
 void convolution(float* A_h, float* kern_h, float* O_h){
     float        *A_d, *O_d;
     int          size_img = IMG_SIZE * IMG_SIZE * sizeof(float);
-    int          size_ker = KERNEL_SIZE * KERNEL_SIZE * sizeof(float);
+    int          size_ker = FILTER_SIZE * FILTER_SIZE * sizeof(float);
     int          size_out = IMG_SIZE * IMG_SIZE * sizeof(float);
     cudaEvent_t start, stop;
 
@@ -67,11 +67,11 @@ void convolution(float* A_h, float* kern_h, float* O_h){
     cudaMalloc((void**)&O_d, size_out);
 
     cudaMemcpy(A_d, A_h, size_img, cudaMemcpyHostToDevice);
-    cudaMemcpyToSymbol(kern, kern_h, size_ker);   // copies the data to GPUs constant memory.
+    cudaMemcpyToSymbol(conv_filter, kern_h, size_ker);   // copies the data to GPUs constant memory.
 
     dim3 threads(TILE_DIM, TILE_DIM);
-    dim3 blocks( ( IMG_SIZE + (TILE_DIM - KERNEL_SIZE + 1) - 1)/( TILE_DIM - KERNEL_SIZE + 1 ), 
-                ( IMG_SIZE + (TILE_DIM - KERNEL_SIZE + 1) - 1)/( TILE_DIM - KERNEL_SIZE + 1 ));   
+    dim3 blocks( ( IMG_SIZE + (TILE_DIM - FILTER_SIZE + 1) - 1)/( TILE_DIM - FILTER_SIZE + 1 ), 
+                ( IMG_SIZE + (TILE_DIM - FILTER_SIZE + 1) - 1)/( TILE_DIM - FILTER_SIZE + 1 ));   
     calcTiledConvolution<<<blocks, threads>>>(A_d, O_d);
     cudaDeviceSynchronize();
     
@@ -104,14 +104,14 @@ void convolution(float* A_h, float* kern_h, float* O_h){
 }
 
 int main(){
-    float *kernel;
+    float *filter;
     img     = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
-    kernel  = (float*)malloc(KERNEL_SIZE * KERNEL_SIZE * sizeof(float));
+    filter  = (float*)malloc(FILTER_SIZE * FILTER_SIZE * sizeof(float));
     output  = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
     
     init_img();
-    init_kernel(kernel);
-    convolution(img, kernel, output);
+    init_filter(filter);
+    convolution(img, filter, output);
 
     free(img);
     free(output);

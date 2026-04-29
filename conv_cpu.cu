@@ -3,10 +3,10 @@
 #include <time.h>
 
 #define IMG_SIZE 512
-#define KERNEL_SIZE 3
+#define FILTER_SIZE 3
 
 float *img;
-float *kernel;
+float *filter;
 float *output;
 
 void init_img(){
@@ -14,11 +14,11 @@ void init_img(){
             img[i] = rand() % 256;
     }
 }
-void init_kernel(){
-    for(int i=0; i<KERNEL_SIZE*KERNEL_SIZE; i++){
-        kernel[i] = rand() % KERNEL_SIZE;
-        if(((int)kernel[i]) & 1)
-            kernel[i] *= -1;
+void init_filter(){
+    for(int i=0; i<FILTER_SIZE*FILTER_SIZE; i++){
+        filter[i] = rand() % FILTER_SIZE;
+        if(((int)filter[i]) & 1)
+            filter[i] *= -1;
     }
 }
 
@@ -28,13 +28,13 @@ void convolution(){
 
             float tsum=0;
 
-            for(int ki=0; ki<KERNEL_SIZE; ki++){
-                for(int kj=0; kj<KERNEL_SIZE; kj++){
+            for(int ki=0; ki<FILTER_SIZE; ki++){
+                for(int kj=0; kj<FILTER_SIZE; kj++){
 
-                    int row = i + ki - KERNEL_SIZE/2;
-                    int col = j + kj - KERNEL_SIZE/2;
+                    int row = i + ki - FILTER_SIZE/2;
+                    int col = j + kj - FILTER_SIZE/2;
                     if(row>=0 && col>=0 && row<IMG_SIZE && col<IMG_SIZE )
-                        tsum += img[ row * IMG_SIZE + col ] * kernel[ ki * KERNEL_SIZE + kj];
+                        tsum += img[ row * IMG_SIZE + col ] * filter[ ki * FILTER_SIZE + kj];
                 }
             }
             output[ i * IMG_SIZE + j] = tsum;
@@ -44,11 +44,11 @@ void convolution(){
 
 int main(){
     img = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
-    kernel = (float*)malloc(KERNEL_SIZE * KERNEL_SIZE * sizeof(float));
+    filter = (float*)malloc(FILTER_SIZE * FILTER_SIZE * sizeof(float));
     output = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
 
     init_img();
-    init_kernel();
+    init_filter();
     convolution();
 
     double total = 0;

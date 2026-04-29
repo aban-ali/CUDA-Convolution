@@ -20,7 +20,6 @@ Brief description of five Convolution implementations:
 - Constant memory usage
 - Loop unrolling
 
----
 
 ## 4. Results
 Use a table for quick scannability:
