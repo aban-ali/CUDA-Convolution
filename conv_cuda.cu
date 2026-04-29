@@ -5,12 +5,19 @@
 #define KERNEL_SIZE 3
 
 float *img;
-float kernel[KERNEL_SIZE * KERNEL_SIZE] = {1, 0, -1, 1, 0, -1, 1, 0, -1};
+float *kernel;
 float *output;
 
 void init_img(){
     for(int i=0; i<IMG_SIZE*IMG_SIZE; i++)
         img[i] = rand() % 256;
+}
+void init_kernel(){
+    for(int i=0; i<KERNEL_SIZE*KERNEL_SIZE; i++){
+        kernel[i] = rand() % KERNEL_SIZE;
+        if(((int)kernel[i]) & 1)
+            kernel[i] *= -1;
+    }
 }
 
 __global__
@@ -90,9 +97,11 @@ void convolution(float* A_h, float* O_h){
 
 int main(){
     img = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
+    kernel = (float*)malloc(KERNEL_SIZE * KERNEL_SIZE * sizeof(float));
     output = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
     
     init_img();
+    init_kernel();
     convolution(img, output);
 
     free(img);

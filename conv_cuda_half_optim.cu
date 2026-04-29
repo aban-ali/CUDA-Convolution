@@ -13,11 +13,11 @@ void init_img(){
     for(int i=0; i<IMG_SIZE*IMG_SIZE; i++)
         img[i] = rand() % 256;
 }
-void kernel_init(float *kernel){
-    for(int i=0; i<KERNEL_SIZE; i++){
-        for(int j=-1*KERNEL_SIZE/2; j<=KERNEL_SIZE/2; j++){
-            kernel[i * KERNEL_SIZE + (j + 1)] = -j;
-        }
+void init_kernel(float *kernel){
+    for(int i=0; i<KERNEL_SIZE*KERNEL_SIZE; i++){
+        kernel[i] = rand() % KERNEL_SIZE;
+        if(((int)kernel[i]) & 1)
+            kernel[i] *= -1;
     }
 }
 
@@ -110,7 +110,7 @@ int main(){
     output  = (float*)malloc(IMG_SIZE * IMG_SIZE * sizeof(float));
     
     init_img();
-    kernel_init(kernel);
+    init_kernel(kernel);
     convolution(img, kernel, output);
 
     free(img);
