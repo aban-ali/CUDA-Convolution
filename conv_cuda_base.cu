@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #define IMG_SIZE 2048
-#define FILTER_SIZE 7
+#define FILTER_SIZE 3
 
 float *img;
 float *filter;
@@ -49,10 +49,10 @@ void convolution(float* A_h, float* O_h){
     int          size_img = IMG_SIZE * IMG_SIZE * sizeof(float);
     int          size_filter = FILTER_SIZE * FILTER_SIZE * sizeof(float);
     int          size_out = IMG_SIZE * IMG_SIZE * sizeof(float);
-    // cudaEvent_t  start, stop;
+    cudaEvent_t  start, stop;
 
-    // cudaEventCreate(&start);
-    // cudaEventCreate(&stop);
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
 
     cudaMalloc((void**)&A_d, size_img);
     cudaMalloc((void**)&filter_d, size_filter);
@@ -64,20 +64,20 @@ void convolution(float* A_h, float* O_h){
     dim3 threads(8, 8);
     dim3 blocks( (IMG_SIZE + threads.x - 1)/threads.x, (IMG_SIZE + threads.y - 1)/threads.y);   
     calcConvolution<<<blocks, threads>>>(A_d, filter_d, O_d);
-    // cudaDeviceSynchronize();
+    cudaDeviceSynchronize();
 
-    // float total = 0.0f;
-    // for(int t=0; t<10; t++){
-    //     cudaEventRecord(start);
-    //     calcConvolution<<<blocks, threads>>>(A_d, filter_d, O_d);
-    //     cudaEventRecord(stop);
-    //     cudaEventSynchronize(stop);
+    float total = 0.0f;
+    for(int t=0; t<10; t++){
+        cudaEventRecord(start);
+        calcConvolution<<<blocks, threads>>>(A_d, filter_d, O_d);
+        cudaEventRecord(stop);
+        cudaEventSynchronize(stop);
 
-    //     float ms = 0.0f;
-    //     cudaEventElapsedTime(&ms, start, stop);
-    //     total += ms;
-    // }
-    // printf("Average time of 10 runs: %f ms\n", total/10);
+        float ms = 0.0f;
+        cudaEventElapsedTime(&ms, start, stop);
+        total += ms;
+    }
+    printf("Average time of 10 runs: %f ms\n", total/10);
     
     cudaError_t err = cudaGetLastError();
     if(err != cudaSuccess){

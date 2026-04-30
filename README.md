@@ -1,63 +1,150 @@
-# Performance Comparison: CPU vs. CUDA vs. 3 Optimized CUDA versions
+# Performance Comparison: CPU vs CUDA vs Optimized CUDA Kernels
 
 ## 1. Overview
 
-* Benchmarking Convolution operation in CPU and CUDA to demonstrate the speedup of GPU acceleration and memory optimization (shared memory/tiling).
+This project benchmarks 2D convolution on CPU and GPU, demonstrating the impact of GPU parallelism and memory optimizations such as shared memory tiling and constant memory usage.
 
-## 2. The Approach
-Brief description of five Convolution implementations:
+The goal is to understand not just speedup, but **how different memory access strategies affect performance**.
 
-* **CPU Baseline**: Single-threaded C implementation serving as the overall baseline model.
-* **Simple CUDA**: Naive global memory implementation, it serves as the base CUDA implementation.
-* **Base Tile CUDA**: Naive tiled implementation. Depends on cache for halo elements. Implemented using contant and shared memory.
-* **Optimized CUDA 1**: Improvement on Base Tile CUDA implementation. Each thread loads an input tile element. Thus, lot of threads does not involve in output calculation.
-* **Optimized CUDA 2**: Most optimized version. Alternate implementation of Optimized CUDA 1 version. Each thread calculates an output element.
+---
+
+## 2. Approach
+
+Five convolution implementations were evaluated:
+
+* **CPU Baseline**
+  A single-threaded C implementation used as the reference.
+
+* **CUDA Base**
+  A naive GPU implementation where each thread computes one output element using only global memory.
+
+* **Optimized CUDA 1 (Cache-assisted Tiling)**
+  Uses shared memory for tiles but does not explicitly load halo elements. Halo accesses fall back to global memory and rely on cache.
+
+* **Optimized CUDA 2 (Full Tile Loading, Input-centric)**
+  Each thread loads one input element into shared memory, including halo regions. Only inner threads compute outputs.
+
+* **Optimized CUDA 3 (Full Tile Loading, Output-centric)**
+  Each thread computes one output element. Some threads participate more in loading shared memory than others.
+
+---
 
 ## 3. Optimization Techniques
 
-- Shared memory tiling
-- Memory coalescing
-- Constant memory usage
-- Loop unrolling
+The following optimizations were explored:
 
+* Shared memory tiling to reduce global memory traffic
+* Memory coalescing for efficient global memory access
+* Constant memory for filter reuse
+* Loop unrolling for small fixed-size kernels
+
+---
 
 ## 4. Results
-Use a table for quick scannability:
 
-| Implementation | Execution Time (ms) | Speedup (vs CPU) |
-|---|---|---|
-| CPU | 8.3125 ms | 1.0x |
-| Simple CUDA | 0.052813 ms | 157.4x |
-| Base Tile CUDA| 0.050234 ms | 165.5x  |
-| Half Optimized CUDA| 0.036029 ms | 230.7x |
-| Optimized CUDA | 0.044717ms | 185.9x |
+Configuration:
 
-## 5. Key Insights
-Short bullets on why the optimized version won:
+* Filter size: 3×3
+* Image size: 2048×2048
+* Tile size: 16×16
 
-* Reduced global memory latency via Shared Memory.
-* Improved Occupancy by tuning dim3 block sizes.
-* Eliminated Bank Conflicts.
+| Implementation   | Execution Time (ms) | Speedup (vs CPU) |
+| ---------------- | ------------------- | ---------------- |
+| CPU              | 132.4231            | 1.0×             |
+| Base CUDA        | 0.7648              | 173.1×           |
+| Optimized CUDA 1 | 0.7436              | 178.1×           |
+| Optimized CUDA 2 | 0.4731              | 279.9×           |
+| Optimized CUDA 3 | 0.6453              | 205.2×           |
 
-Would you like a specific table format or a list of hardware specs to include for more professional credibility?
-#### 5. Analysis (this is the gold section)
+<br>
 
-Explain:
+The optimized implementations achieve up to **~280× speedup over CPU** and **~1.6× improvement over the naive CUDA version**.
 
-why naive is slow
-how shared memory reduces global loads
-how coalescing improves bandwidth
-why optimized is faster
+---
+
+## 5. Analysis
+
+* **Base CUDA vs Optimized CUDA 1**
+  Both show similar performance despite Optimized CUDA 1 using shared memory. This is because halo elements are not explicitly loaded into shared memory, leading to additional global memory accesses.
+  These accesses are often uncoalesced and rely on cache, limiting the benefit of tiling.
+
+* **Optimized CUDA 2 and 3**
+  These implementations explicitly load halo regions into shared memory, eliminating the need for global memory access during computation.
+  As a result:
+
+  * Global memory traffic is significantly reduced
+  * Memory access becomes more structured and predictable
+  * Performance improves substantially
+
+* **Why Optimized CUDA 2 is fastest**
+  Although it wastes some threads (only inner threads compute), it benefits from:
+
+  * simpler indexing
+  * reduced control overhead
+  * efficient shared memory usage
+
+  This highlights an important trade-off:
+
+  > reducing memory access cost can be more impactful than maximizing thread utilization.
+
+* **General Observation**
+  GPU performance is heavily influenced by memory behavior. Even small inefficiencies in memory access patterns can offset the benefits of parallelism.
+
+
+
+<br>
+
+#### Effect of Kernel Size on Performance
+
+* The relative performance of optimized kernels changes with increasing filter size.
+
+* For **small filters (e.g., 3×3)**, **Optimized CUDA 2** performs best.
+  Although some threads remain idle, the overall execution is efficient due to:
+
+  * lower control overhead
+  * simpler indexing
+  * efficient shared memory usage
+
+* For **larger filters (e.g., 7×7)**, **Optimized CUDA 3 becomes comparable or faster** than Optimized CUDA 2.
+  This is because:
+
+  * In Optimized CUDA 2, the number of **active (useful) threads decreases significantly** as filter size increases
+  * For example, with a 16×16 tile and a 7×7 filter, only about **10×10 = 100 threads out of 256 (~39%)** contribute to output computation
+  * The remaining threads are idle during computation, reducing effective parallelism
+
+* In contrast, Optimized CUDA 3 assigns **one output element per thread**, ensuring:
+
+  * better thread utilization
+  * more uniform workload distribution
+
+* This leads to an important trade-off:
+
+  > **Input-centric tiling (Kernel 2) is more efficient for small filters, while output-centric tiling (Kernel 3) scales better with larger filters.**
+
+
+---
 
 ## 6. Setup & Usage
-Provide a one-liner to build and run:
 
-`nvcc conv_cuda_half_optim.cu -o benchmark && ./benchmark`
+Compile and run:
 
-List hardware used (e.g., RTX 3080, Intel i7-12700K) so the numbers have context.
+```bash
+nvcc <filename>.cu -o <executable>
+./<executable>
+```
+
+Hardware used:
+
+* GPU: GeForce GTX 1650
+* NVIDIA Driver: 595.79
+* CUDA Version: 13.2
+
+---
 
 ## 7. Future Work
-- multi-channel convolution
-- larger kernels
-- tensor cores
-- fusion
+
+* Do a more thorough analysis through Nsight Compute
+* Extend to multi-channel convolution
+* Analyze performance scaling with image size
+* Explore kernel fusion and operator-level optimizations
+* Investigate tensor core acceleration

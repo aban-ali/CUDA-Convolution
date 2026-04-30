@@ -22,7 +22,7 @@ void init_filter(float *filter){
 }
 
 __global__
-void calcTiledConvolution(float* image, float* out){
+void calcTiledConvolution(float* __restrict__ image, float* __restrict__ out){
     int row = blockIdx.y * (TILE_DIM - FILTER_SIZE + 1) + threadIdx.y - FILTER_SIZE/2;
     int col = blockIdx.x * (TILE_DIM - FILTER_SIZE + 1) + threadIdx.x - FILTER_SIZE/2;
     __shared__ float Nds[TILE_DIM][TILE_DIM];
@@ -42,13 +42,15 @@ void calcTiledConvolution(float* image, float* out){
             tile_col>=0 && tile_col<(TILE_DIM - FILTER_SIZE + 1) ){
 
             float val = 0;
-
+            
+            #pragma unroll
             for(int i=0; i<FILTER_SIZE; i++){
+                #pragma unroll
                 for(int j=0; j<FILTER_SIZE; j++){
                     val += Nds[tile_row + i][tile_col + j] * conv_filter[ i * FILTER_SIZE + j ];
                 }
             }
-            out[(row + FILTER_SIZE/2) * IMG_SIZE + (col + FILTER_SIZE/2)] = val;
+            out[row * IMG_SIZE + col] = val;
         }
     }
 }

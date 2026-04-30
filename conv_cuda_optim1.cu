@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #define IMG_SIZE 2048
-#define FILTER_SIZE 7
+#define FILTER_SIZE 3
 #define TILE_DIM 16
 
 float *img;
@@ -22,7 +22,7 @@ void init_filter(float *filter){
 }
 
 __global__
-void calcTiledConvolution(float* image, float* out){
+void calcTiledConvolution(float* __restrict__ image, float* __restrict__ out){
     int row = blockIdx.y * TILE_DIM + threadIdx.y;
     int col = blockIdx.x * TILE_DIM + threadIdx.x;
     __shared__ float Nds[TILE_DIM][TILE_DIM];
