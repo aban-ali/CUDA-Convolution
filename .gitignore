@@ -1,6 +1,8 @@
+# Ignore object files and output files
 *.out
 *.o
 
+# Ignore CUDA time and analysis files
 cuda_time/*
 nsight_analysis/*
 Convolution\ CUDA/*
