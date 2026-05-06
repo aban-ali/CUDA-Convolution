@@ -90,10 +90,6 @@ The optimized implementations achieve up to **~280× speedup over CPU** and **~1
 * **General Observation**
   GPU performance is heavily influenced by memory behavior. Even small inefficiencies in memory access patterns can offset the benefits of parallelism.
 
-
-
-<br>
-
 #### Effect of Kernel Size on Performance
 
 * The relative performance of optimized kernels changes with increasing filter size.
