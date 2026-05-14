@@ -6,7 +6,6 @@ This project benchmarks 2D convolution on CPU and GPU, demonstrating the impact 
 
 The goal is to understand not just speedup, but **how different memory access strategies affect performance**.
 
----
 
 ## 2. Approach
 
@@ -27,7 +26,6 @@ Five convolution implementations were evaluated:
 * **Optimized CUDA 3 (Full Tile Loading, Output-centric)**
   Each thread computes one output element. Some threads participate more in loading shared memory than others.
 
----
 
 ## 3. Optimization Techniques
 
@@ -38,7 +36,6 @@ The following optimizations were explored:
 * Constant memory for filter reuse
 * Loop unrolling for small fixed-size kernels
 
----
 
 ## 4. Results
 
@@ -60,7 +57,6 @@ Configuration:
 
 The optimized implementations achieve up to **~280× speedup over CPU** and **~1.6× improvement over the naive CUDA version**.
 
----
 
 ## 5. Analysis
 
@@ -118,8 +114,6 @@ The optimized implementations achieve up to **~280× speedup over CPU** and **~1
   > **Input-centric tiling (Kernel 2) is more efficient for small filters, while output-centric tiling (Kernel 3) scales better with larger filters.**
 
 
----
-
 ## 6. Setup & Usage
 
 Compile and run:
@@ -135,7 +129,6 @@ Hardware used:
 * NVIDIA Driver: 595.79
 * CUDA Version: 13.2
 
----
 
 ## 7. Future Work
 
